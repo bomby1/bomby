@@ -31,7 +31,19 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
       
+      - name: Cache system dependencies
+        id: cache-apt
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /usr/bin/ffmpeg
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/full_pipeline.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+      
       - name: Install system dependencies
+        if: steps.cache-apt.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -45,7 +57,17 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
       
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      
       - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: |
           playwright install chromium
           playwright install-deps chromium
