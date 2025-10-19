@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+downloads/
+edited/
+work/
+state/proven_session.json
+state/job_states.json
+
+# Environment
+.env
+
+# YouTube credentials (NEVER COMMIT - use GitHub Secrets)
+youtube_credentials.json
+youtube_token.json
+
+# Logs
+*.log

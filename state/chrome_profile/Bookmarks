@@ -1,0 +1,83 @@
+{
+   "checksum": "c056c136688a217fe48cf2dfabc22ed6",
+   "roots": {
+      "bookmark_bar": {
+         "children": [  ],
+         "date_added": "13404732181959028",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13075301374514945",
+            "date_last_used": "0",
+            "guid": "fa2a10be-ebcc-40e6-9b43-77950f49bf83",
+            "id": "5",
+            "name": "Sign In to Veoh",
+            "type": "url",
+            "url": "http://www.veoh.com/publish/video?source=navbar"
+         }, {
+            "date_added": "13388764809967222",
+            "date_last_used": "0",
+            "guid": "188bbe15-588a-4497-ae74-426b20063436",
+            "id": "6",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "free cruser",
+            "type": "url",
+            "url": "https://github.com/yeongpin/cursor-free-vip"
+         }, {
+            "date_added": "13388764835720297",
+            "date_last_used": "0",
+            "guid": "5a9ea7a7-51b0-494e-a1e6-9b56c8fd691d",
+            "id": "7",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "office free",
+            "type": "url",
+            "url": "https://github.com/massgravel/Microsoft-Activation-Scripts/blob/master/README.md"
+         } ],
+         "date_added": "13404732181959028",
+         "date_last_used": "0",
+         "date_modified": "13388764835720297",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [ {
+            "date_added": "13221404719940629",
+            "date_last_used": "0",
+            "guid": "c02d9e4a-cd57-4b42-be86-e47f0ccaa414",
+            "id": "8",
+            "name": "Watch Online Movies | Free Download Movies In HD Print",
+            "type": "url",
+            "url": "http://www.onlinemovieswatch.com.pk/"
+         }, {
+            "date_added": "13248941684492690",
+            "date_last_used": "0",
+            "guid": "1763f148-08f0-4dd6-9457-c3719fb71323",
+            "id": "9",
+            "name": "Cash from Financial and Investing Activities | Notes, Videos, QA and Tests | Grade 12>Principles of Accounting>Statement of Changes in Financial Position | Kullabs",
+            "type": "url",
+            "url": "https://kullabs.com/class-12/accounting/statement-of-changes-in-financial-position/cash-from-financial-and-investing-activities"
+         } ],
+         "date_added": "13404732181959028",
+         "date_last_used": "0",
+         "date_modified": "13248941684492690",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CuABCr8BCIiBAhK4ASAAkgGjAQqgAQoOY2hyb21lX3N5bmNfYm0SBTUxIWJtGhIJD2/aJvJABgARD2/aJvJABgAiNAnXk7wm8kAGABADGbw9clbTan8LIAEqHDUxIWJtL2ZkOjkxNjM3MjM1NTk0Njg4OTMxNjEiNAnXk7wm8kAGABADGbw9clbTan8LIAEqHDUxIWJtL2ZkOjkxNjM3MjM1NTk0Njg4OTMxNjEpN4PaJvJABgDqAQwIztStxwYQ0I6XrQESACoYMVZIM3JpTHpzcjl4aDdRUXRBMzFVZz09SAMSrQIICRKoAgocSXQ0eElMMTdSSG1qN3I3RXhTandLSy9XVGx3PRKmAVo6QURxdEFaeXRUQms4NXZOZDFuczB6K05jWEJaNzJtb1BsQUFJRlJEV01qZi9uZXZIMnhHcGw5VnZwV0JURnFXOVF3SFFTcXZPWWtQT3VQZGNHQWZIZUVwNjlVTUFRUWxYR0NxUWxPWElnUG05R0dkamdPeG5jenhSYS9laXBmLzByOVk0N3BmNWNONzREUzllOVh1NlVCeHFrVzlsZDY5SGdRPT0YACAAKAAw+6nkuLOlgQM4jp6AjtkuQI6egI7ZLkocS0xMS0ZIeGJZQnU4YlNJWHl6N0hTN2RvbldFPVofIh21T1BITmsyQXZKZTQ0czd0MmoySGUrQmp3RVdnPWWUjwQCEsMBCAMSvgEKHG5qZ0R1ODhlQ3J2WHA4NnBEN2ZIR2NxRnA4OD0SZlo6QURxdEFad3BqK1NSU2F0L1lBNzdNVDU5ZE1aS2xoUmZ1UzQ2bFVGNE03L05LaHNIZkliVkVFcXRjREJ1YjhhanZ4VDRZMUtMM3hQcXZoM01ORkZBcDJrQXhtZWpsWXFhMVE9PRgAIAAoADDnp7+2nNKMAzgAQABKHHl6TkIwMWNuNTRBN2NSVTB1VCsvUGdtVHRVbz1aAGUAAAAAEuwBCAcS5wEKHEJFYVVxdkxPOHI1b3l2M2pPQW53VWd1Y1lOOD0SZlo6QURxdEFaeldBczVVTWhMeWRHT3FoUm4wYkw0SE9iMGcxUkMyNVB3RkNHNUprTHZvd3lUTTRvUDV1VFFWMEZ2bGlpOU1idjNyMGNLWXg3T2dHYlZTdUhqenZxY1JhR2NCR2c9PRgAIAAoADChzq+3nNKMAzi776jL4jJAu++oy+IyShxwUnU2UytIL2kwaHFRN3pKZmZJd2JJYi9ndUk9Wh8iHdtKK0w3NGhpOGI4QzRVUXpUNGh6bnBmZ2crYmc9ZRVQ+YkSqwEIARKmAQoceXhKLzZmdmtlY3I3a3A1RVF6QjR0V0xwZGJFPRJOWjpBRHF0QVp3UEIxMlNZL1JJdnd3UGtsODd1MjlLT0liNHpHOTZKNXBVY2hlejZMNUNKUUVvUm5YZGdhNmVDOWVtaHZiZzdJTlc3aVcxGAAgACgAMOenv7ac0owDOABAAEocYVJDV0xnaEY5YjVJbnFLSUR2dUovanZRa0ZjPVoAZQAAAAAS7AEIBhLnAQocR0c2TVpFQXVXVnEzcjY1NGlhTE11anRsV1B3PRJmWjpBRHF0QVp6V0FzNVVNaEx5ZEdPcWhSbjBiTDRIVit6b0pGL015RUQ1Nmw3YzlDQlR1YkFRUFplTWp2ZFAyN1NEOTFjRi9ibkVSenlqTldFYmVtb1lhRjFwSVNrL0ViUDFPdz09GAAgACgAMKHOr7ec0owDOLvvqMviMkC776jL4jJKHFJoblhaUW9FUkZxdlhueHh4VDN3QVhsWTRnaz1aHyIdtk9GOE5XMWhnOEtPaTI4V2FydmEzVHIrT1Y5cz1lFVD5iRKsAggFEqcCChxYa3RjRzkyZldRdGtZQTRibkROUU1wMzdWNkE9EqYBWjpBRHF0QVp5dFRCazg1dk5kMW5zMHorTmNYQlo3ejlMUTV5NFhibmZpWm1PeEF5QmVjRDBTVXd1MWJTZTcyNGtmNVh0QjZxR2hhNmY0bHVpZnlDS1pDTk5oUFJKSmpjT01IQWdaVC9vcUpyZWxGRmlHc2ROblljbDdRTy9MV2Y3QWt5VjMrcTZhS2MzL3U0VGZqb2dkbkpEQ3UxanRlQ29RR2c9PRgAIAAoADDdw/KGgZP0Ajj6wpzM4ixA+sKczOIsShxSSFg1d2tEWjNBeUM3emtlQWVBWW5nVHdGdk09Wh4iHG16c0xyZXNPWFdjRzhxWWJsNlhMSGp0Yjdabz1lAAAAABKsAggIEqcCChxBN3YyT1Ezb0hBMzRsYmZIckt4Q3RkdkhVeWM9EqYBWjpBRHF0QVp5dFRCazg1dk5kMW5zMHorTmNYQlo3Mmt0VnllWlZ1T1BRQkpSNlBGcjg5Mzhmai9xc3FGREQxUWFnQVpyaGVxVU9SelZJV2NJS0ozNmZocGNCQnl5NjZWSzk2Q2JISTZlZmsyYnRGMnZmUnRaSURNSC9Rck9MNUgrR25mdUVOOVBvU3pIUVNBY29wZ0tiM2VyVWhtU3AxaGNjSWc9PRgAIAAoADD7qeS4s6WBAzjHpq3D8i1Ax6atw/ItShxuT3F4cWswd09OcGhWN3hlUzMzVFNDZXZuTlk9Wh4iHGs3b2tFdVB3SFNyRHUvMHhPWE11akVrNVJPUT1lR/0M2BLDAQgCEr4BChxZY1NUb252RVNQd3FDczRMMmNyVmh2NjhMOTg9EmZaOkFEcXRBWnhZMC8xazJYdkpGdzhzVTBFcTBqSlNJcGplcGphdmN5b0JFRWIvbEZadlk4SGFHN2RLRThaUTFBeVk5d281TldZNEdrQTlwUHQwc1FjejV6L3BVbVpxeFUyTWRBPT0YACAAKAAw56e/tpzSjAM4AEAAShxvUFZraHdCUmJWNjVLQ1dSMitJT05IV29PdTg9WgBlAAAAADABOAA=",
+   "version": 1
+}

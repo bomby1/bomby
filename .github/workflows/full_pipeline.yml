@@ -1,0 +1,150 @@
+name: Full Video Production Pipeline
+
+on:
+  # Manual trigger with inputs
+  workflow_dispatch:
+    inputs:
+      privacy:
+        description: 'YouTube video privacy'
+        required: true
+        default: 'public'
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+      
+  # Scheduled run (optional - runs daily at 2 AM UTC)
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  
+  # Trigger on push to main (optional)
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  video-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # 1 hour max
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ffmpeg \
+            libsndfile1 \
+            libavcodec-extra \
+            fonts-liberation
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+      
+      - name: Create required directories
+        run: |
+          mkdir -p downloads edited work state config
+      
+      - name: Setup CapCut session
+        run: |
+          echo '${{ secrets.PROVEN_SESSION }}' > state/proven_session.json
+      
+      - name: Setup Google Sheets credentials
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > google_credentials.json
+      
+      - name: Setup YouTube credentials
+        run: |
+          echo '${{ secrets.YOUTUBE_CREDENTIALS }}' > youtube_credentials.json
+          echo '${{ secrets.YOUTUBE_TOKEN }}' > youtube_token.json
+      
+      - name: Setup manifest with API key
+        run: |
+          # Update manifest.json with OpenRouter API key from secrets
+          python -c "
+import json
+with open('manifest.json', 'r') as f:
+    manifest = json.load(f)
+manifest['openrouter_api_key'] = '${{ secrets.OPENROUTER_API_KEY }}'
+manifest['input_video'] = 'AUTO_DETECT'
+manifest['output_video'] = 'AUTO_DETECT'
+with open('manifest.json', 'w') as f:
+    json.dump(manifest, f, indent=2)
+          "
+      
+      - name: Run Full Pipeline
+        env:
+          CI: true
+          GITHUB_ACTIONS: true
+        run: |
+          python run_full_pipeline.py --privacy ${{ github.event.inputs.privacy || 'public' }}
+      
+      - name: Upload raw video as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-video-${{ github.run_number }}
+          path: downloads/*.mp4
+          retention-days: 7
+          if-no-files-found: warn
+      
+      - name: Upload edited video as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edited-video-${{ github.run_number }}
+          path: |
+            edited/*.mp4
+            edited/*.srt
+            edited/*.metadata.json
+            edited/*.txt
+          retention-days: 30
+          if-no-files-found: warn
+      
+      - name: Upload logs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-logs-${{ github.run_number }}
+          path: |
+            *.log
+            work/edit_state.json
+            state/job_states.json
+          retention-days: 7
+          if-no-files-found: ignore
+      
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          rm -f youtube_credentials.json youtube_token.json
+          rm -f google_credentials.json
+          rm -f state/proven_session.json
+      
+      - name: Report status
+        if: always()
+        run: |
+          echo "Pipeline Status: ${{ job.status }}"
+          echo "Run Number: ${{ github.run_number }}"
+          echo "Privacy Setting: ${{ github.event.inputs.privacy || 'public' }}"
+          
+          if [ -d "edited" ] && [ "$(ls -A edited/*.mp4 2>/dev/null)" ]; then
+            echo "✅ Edited videos created successfully"
+            ls -lh edited/
+          else
+            echo "⚠️ No edited videos found"
+          fi
