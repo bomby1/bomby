@@ -91,7 +91,12 @@ jobs:
       
       - name: Setup manifest with API key
         run: |
-          python -c "import json; manifest = json.load(open('manifest.json')); manifest['openrouter_api_key'] = '${{ secrets.OPENROUTER_API_KEY }}'; manifest['input_video'] = 'AUTO_DETECT'; manifest['output_video'] = 'AUTO_DETECT'; json.dump(manifest, open('manifest.json', 'w'), indent=2)"
+          python -c "import json; manifest = json.load(open('manifest.json', 'r')); manifest['openrouter_api_key'] = '${{ secrets.OPENROUTER_API_KEY }}'; manifest['input_video'] = 'AUTO_DETECT'; manifest['output_video'] = 'AUTO_DETECT'; json.dump(manifest, open('manifest.json', 'w'), indent=2)"
+          echo "=== Manifest Configuration ==="
+          cat manifest.json
+          echo ""
+          echo "=== Background Music File Check ==="
+          ls -lh background.mp3 || echo "WARNING: background.mp3 not found!"
       
       - name: Run Full Pipeline
         env:
