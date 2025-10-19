@@ -1,7 +1,9 @@
 name: Full Video Production Pipeline
 
 on:
-  # Manual trigger with inputs
+  schedule:
+    - cron: '0 2 * * *'
+  
   workflow_dispatch:
     inputs:
       privacy:
@@ -13,14 +15,6 @@ on:
           - public
           - unlisted
           - private
-  
-  # Scheduled run (optional - runs daily at 2 AM UTC)
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
-  
-  # Trigger on push to main (optional)
-  # push:
-  #   branches: [ main ]
 
 jobs:
   video-pipeline:
