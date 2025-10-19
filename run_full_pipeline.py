@@ -139,13 +139,18 @@ class PipelineOrchestrator:
             logger.info("Please create manifest.json with your editing settings")
             return False
         
-        # Run auto_edit.py with auto-detection
+        # Clear state file to ensure fresh run (important for GitHub Actions)
+        state_file = self.project_root / "work" / "edit_state.json"
+        if state_file.exists():
+            state_file.unlink()
+            logger.info("🔄 Cleared previous editing state for fresh run")
+        
+        # Run auto_edit.py with auto-detection (no --resume to ensure all steps run)
         cmd = [
             "python", 
             str(self.editor_script),
             "--manifest", str(self.manifest),
-            "--work-dir", "work",
-            "--resume"
+            "--work-dir", "work"
         ]
         return self.run_command(cmd, "Video Editing with AI (auto_edit.py)")
     
