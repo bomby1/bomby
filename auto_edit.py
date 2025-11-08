@@ -851,11 +851,12 @@ Return ONLY valid JSON in this exact format:
   "hashtags": ["#hashtag1", "#hashtag2", ... 10 hashtags total]
 }}"""
         
-        # Retry logic for GitHub Actions (network can be flaky)
+        # Retry logic for GitHub Actions (network can be flaky + rate limits)
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 logger.info(f"API request attempt {attempt + 1}/{max_retries}...")
+                sys.stdout.flush()  # Immediate output
                 
                 response = requests.post(
                     "https://openrouter.ai/api/v1/chat/completions",
@@ -866,7 +867,7 @@ Return ONLY valid JSON in this exact format:
                         "X-Title": "Auto Video Editor"  # Optional: app name
                     },
                     json={
-                        "model": "deepseek/deepseek-chat",
+                        "model": "meta-llama/llama-3.2-3b-instruct:free",  # FREE model that works!
                         "messages": [
                             {"role": "system", "content": "You are a YouTube SEO expert. Always respond with valid JSON only."},
                             {"role": "user", "content": prompt}
@@ -908,9 +909,11 @@ Return ONLY valid JSON in this exact format:
                         continue
                         
                 elif response.status_code == 429:
-                    logger.warning("Rate limited, waiting 5 seconds...")
+                    wait_time = 10 * (attempt + 1)  # Exponential backoff: 10s, 20s, 30s
+                    logger.warning(f"Rate limited (429), waiting {wait_time}s before retry...")
+                    sys.stdout.flush()
                     import time
-                    time.sleep(5)
+                    time.sleep(wait_time)
                     continue
                 else:
                     logger.warning(f"API request failed: {response.status_code} - {response.text}")
