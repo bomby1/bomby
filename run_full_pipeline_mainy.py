@@ -2,7 +2,7 @@
 """
 Full Video Pipeline Orchestrator
 Runs the complete end-to-end workflow:
-1. Video Generation (main.py) - CapCut AI video generation & download
+1. Video Generation (mainy.py) - CapCut AI video generation & download
 2. Video Editing (auto_edit.py) - Professional editing with AI features
 3. YouTube Upload (youtube_uploader.py) - Upload to YouTube with metadata
 
@@ -40,7 +40,7 @@ class PipelineOrchestrator:
         self.continue_on_error = continue_on_error
         
         # Pipeline scripts
-        self.main_script = self.project_root / "src" / "main.py"
+        self.main_script = self.project_root / "src" / "mainy.py"
         self.editor_script = self.project_root / "auto_edit.py"
         self.uploader_script = self.project_root / "youtube_uploader.py"
         
@@ -112,7 +112,7 @@ class PipelineOrchestrator:
                 return False
     
     def step1_video_generation(self):
-        """Step 1: Generate video using CapCut AI (main.py)"""
+        """Step 1: Generate video using CapCut AI (mainy.py)"""
         if self.skip_generation:
             logger.info("⏭️  Skipping video generation (--skip-generation flag)")
             logger.info("")
@@ -122,7 +122,7 @@ class PipelineOrchestrator:
             logger.error(f"Main script not found: {self.main_script}")
             return False
         
-        # Run main.py (video generation & download)
+        # Run mainy.py (video generation & download)
         # Auto-enable headless mode in GitHub Actions
         cmd = ["python", str(self.main_script)]
         
@@ -131,7 +131,7 @@ class PipelineOrchestrator:
             cmd.append("--headless")
             logger.info("🤖 GitHub Actions detected - running in headless mode")
         
-        return self.run_command(cmd, "Video Generation & Download (main.py)")
+        return self.run_command(cmd, "Video Generation & Download (mainy.py)")
     
     def step2_video_editing(self):
         """Step 2: Edit video with AI features (auto_edit.py)"""
