@@ -107,7 +107,7 @@ jobs:
           CI: true
           GITHUB_ACTIONS: true
         run: |
-          python run_full_pipeline.py --privacy ${{ github.event.inputs.privacy || 'public' }}
+          python run_full_pipeline_mainy.py --privacy ${{ github.event.inputs.privacy || 'public' }}
       
       - name: Upload raw video as artifact
         if: always()
