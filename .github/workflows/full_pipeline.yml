@@ -2,10 +2,10 @@ name: Full Video Production Pipeline
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # Run 1: 02:00 UTC
-    - cron: '0 10 * * *'  # Run 3: 10:00 UTC (4 hours after Run 2)
-    - cron: '0 14 * * *'  # Run 4: 14:00 UTC (4 hours after Run 3)
-    - cron: '0 22 * * *'  # Run 5: 22:00 UTC (4 hours after Run 4)
+    - cron: '0 0 * * *'   
+    - cron: '0 4 * * *' 
+    - cron: '0 8 * * *'  
+    - cron: '0 12 * * *'  
   
   workflow_dispatch:
     inputs:
