@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 CapCut Automation - COMPLETE PIPELINE
 
@@ -10,19 +9,6 @@ Handles: Navigation → Form Fill → Generate → Export → Download → Video
 import os
 import sys
 import json
-
-# Fix Windows console encoding for emoji support and disable buffering for real-time output
-if sys.platform == 'win32':
-    try:
-        import codecs
-        # Use line buffering for immediate output
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
-    except Exception:
-        pass
-
-# Disable output buffering for real-time console updates
-os.environ['PYTHONUNBUFFERED'] = '1'
 import time
 import argparse
 import subprocess
@@ -47,14 +33,6 @@ try:
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
-
-
-# Override built-in print to always flush for real-time output
-_original_print = print
-def print(*args, **kwargs):
-    """Custom print function that always flushes output for real-time display."""
-    kwargs.setdefault('flush', True)
-    _original_print(*args, **kwargs)
 
 
 class JobState:
@@ -692,196 +670,6 @@ class CapCutOrchestrator:
             print(f"❌ Generation monitoring failed: {e}")
             return False
     
-    def match_stock_media(self) -> bool:
-        """
-        Match stock media before exporting the video.
-        Steps:
-        1. Click on "Scenes" in the left sidebar
-        2. Click on "Media" tab
-        3. Click on "Match stock media" button
-        4. Click "Continue" on the confirmation popup
-        5. Wait 90 seconds for matching to complete
-        
-        Returns:
-            True if stock media matching completed successfully
-        """
-        try:
-            print("\n" + "=" * 60)
-            print("🎬 Matching Stock Media")
-            print("=" * 60)
-            
-            # Debug: Check current page and frames
-            print(f"📍 Current URL: {self.current_page.url}")
-            print(f"📊 Number of frames: {len(self.current_page.frames)}")
-            
-            # CRITICAL: Use page.evaluate to run the EXACT console script that works
-            print("\n🔧 Using direct JavaScript execution (like console script)...")
-            
-            try:
-                # Step 1: Click Scenes using JavaScript (exactly like console)
-                print("1️⃣ Clicking 'Scenes' button with JavaScript...")
-                result = self.current_page.evaluate("""
-                    () => {
-                        const scenesElements = Array.from(document.querySelectorAll('*')).filter(el => 
-                            el.textContent.trim() === 'Scenes' && el.offsetParent !== null
-                        );
-                        if (scenesElements.length > 0) {
-                            scenesElements[0].click();
-                            return { success: true, found: scenesElements.length };
-                        }
-                        return { success: false, found: 0 };
-                    }
-                """)
-                
-                if result['success']:
-                    print(f"   ✅ Clicked 'Scenes' button (found {result['found']} elements)")
-                    scenes_clicked = True
-                else:
-                    print(f"   ❌ Could not find 'Scenes' button")
-                    scenes_clicked = False
-                    
-            except Exception as e:
-                print(f"   ❌ JavaScript execution failed: {e}")
-                scenes_clicked = False
-            
-            if not scenes_clicked:
-                print("❌ Could not find 'Scenes' button")
-                return False
-            
-            # Wait for the Scenes panel to open (human-like delay)
-            print("   ⏳ Waiting for Scenes panel to open...")
-            time.sleep(3)
-            
-            # Step 2: Click on "Media" tab using JavaScript
-            print("2️⃣ Clicking 'Media' tab with JavaScript...")
-            time.sleep(0.8)  # Human-like delay before clicking
-            
-            try:
-                result = self.current_page.evaluate("""
-                    () => {
-                        const mediaElements = Array.from(document.querySelectorAll('*')).filter(el => 
-                            el.textContent.trim() === 'Media' && el.offsetParent !== null
-                        );
-                        if (mediaElements.length > 0) {
-                            mediaElements[0].click();
-                            return { success: true, found: mediaElements.length };
-                        }
-                        return { success: false, found: 0 };
-                    }
-                """)
-                
-                if result['success']:
-                    print(f"   ✅ Clicked 'Media' tab (found {result['found']} elements)")
-                    media_clicked = True
-                else:
-                    print(f"   ❌ Could not find 'Media' tab")
-                    return False
-                    
-            except Exception as e:
-                print(f"   ❌ JavaScript execution failed: {e}")
-                return False
-            
-            # Wait for the Media panel to load (human-like delay)
-            print("   ⏳ Waiting for Media panel to load...")
-            time.sleep(2.5)
-            
-            # Step 3: Click on "Match" button using JavaScript
-            print("3️⃣ Clicking 'Match' button with JavaScript...")
-            time.sleep(1.2)  # Human-like delay before clicking
-            
-            try:
-                result = self.current_page.evaluate("""
-                    () => {
-                        // Method 1: Try class-based selector first
-                        const matchBtn = document.querySelector("div[class*='match-media-btn']");
-                        if (matchBtn && matchBtn.offsetParent !== null) {
-                            matchBtn.click();
-                            return { success: true, method: 'class-selector' };
-                        }
-                        
-                        // Method 2: Find all divs with exact "Match" text
-                        const allDivs = Array.from(document.querySelectorAll('div'));
-                        const matchDivs = allDivs.filter(div => {
-                            const text = div.textContent.trim();
-                            return text === 'Match' && div.offsetParent !== null;
-                        });
-                        
-                        if (matchDivs.length > 0) {
-                            matchDivs[matchDivs.length - 1].click(); // Use last one
-                            return { success: true, method: 'text-match', found: matchDivs.length };
-                        }
-                        
-                        return { success: false };
-                    }
-                """)
-                
-                if result['success']:
-                    method = result.get('method', 'unknown')
-                    print(f"   ✅ Clicked 'Match' button (method: {method})")
-                    match_clicked = True
-                else:
-                    print(f"   ❌ Could not find 'Match' button")
-                    return False
-                    
-            except Exception as e:
-                print(f"   ❌ JavaScript execution failed: {e}")
-                return False
-            
-            # Wait longer for confirmation popup to appear (human-like delay)
-            print("   ⏳ Waiting for confirmation popup...")
-            time.sleep(3.5)
-            
-            # Step 4: Click "Continue" button using JavaScript
-            print("4️⃣ Clicking 'Continue' button with JavaScript...")
-            time.sleep(0.6)  # Human-like delay before clicking
-            
-            try:
-                result = self.current_page.evaluate("""
-                    () => {
-                        const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]')).filter(btn => 
-                            btn.offsetParent !== null
-                        );
-                        
-                        const continueBtn = allButtons.find(btn => 
-                            btn.textContent.toLowerCase().includes('continue')
-                        );
-                        
-                        if (continueBtn) {
-                            continueBtn.click();
-                            return { success: true, text: continueBtn.textContent.trim() };
-                        }
-                        
-                        return { success: false };
-                    }
-                """)
-                
-                if result['success']:
-                    print(f"   ✅ Clicked 'Continue' button: '{result.get('text', '')}'")
-                    continue_clicked = True
-                else:
-                    print(f"   ❌ Could not find 'Continue' button")
-                    return False
-                    
-            except Exception as e:
-                print(f"   ❌ JavaScript execution failed: {e}")
-                return False
-            
-            # Step 5: Wait 90 seconds for stock media matching to complete
-            print("5️⃣ Waiting 90 seconds for stock media matching to complete...")
-            wait_time = 90
-            for i in range(wait_time):
-                remaining = wait_time - i
-                if remaining % 10 == 0 or remaining <= 5:
-                    print(f"   ⏱️  {remaining} seconds remaining...")
-                time.sleep(1)
-            
-            print("✅ Stock media matching completed!")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Stock media matching failed: {e}")
-            return False
-    
     def set_video_customizations(self, job: Dict[str, Any]) -> bool:
         """
         SIMPLE: Set video customization options using the same methods as fill_form().
@@ -1135,12 +923,15 @@ class CapCutOrchestrator:
             
             # Wait 1 minute for export to complete
             print("⏳ Waiting 1 minute for export to complete...")
+            sys.stdout.flush()
             for i in range(60):
                 remaining = 60 - i
-                print(f"   ⏱️ Export time remaining: {remaining} seconds", end='\r')
+                print(f"   ⏱️ Export time remaining: {remaining} seconds")
+                sys.stdout.flush()
                 time.sleep(1)
             
             print("\n✅ Export completed!")
+            sys.stdout.flush()
             
             # Now download the video from My Cloud
             print("\n" + "=" * 60)
@@ -1155,7 +946,7 @@ class CapCutOrchestrator:
             if downloaded_file:
                 print(f"✅ Video downloaded successfully: {downloaded_file}")
                 print(f"📁 Saved to: {downloaded_file}")
-                print("\nℹ️  Video editing and YouTube upload will be handled by the pipeline orchestrator")                
+                print("\nℹ️  Video editing and YouTube upload will be handled by the pipeline orchestrator")
             else:
                 print("⚠️ Video download failed, but export was successful")
             
@@ -1434,14 +1225,6 @@ class CapCutOrchestrator:
                 raise Exception("Video generation failed or timed out")
             
             print("🎉 Video generation completed successfully!")
-            
-            # Step 6.5: Match stock media before exporting
-            job_state.current_step = "match_stock_media"
-            print("🎬 Matching stock media before export...")
-            if not self.match_stock_media():
-                print("⚠️  Warning: Stock media matching failed, but continuing with export...")
-            else:
-                print("🎉 Stock media matched successfully!")
             
             # Step 7: Export the video
             job_state.current_step = "export_video"
