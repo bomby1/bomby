@@ -1560,7 +1560,7 @@ class CapCutOrchestrator:
             print(f"   ❌ Error setting visual style: {e}")
             return True  # Don't fail the whole process for this
 
-def _set_voice(self, voice: str) -> bool:
+    def _set_voice(self, voice: str) -> bool:
     """
     Set the voice dropdown in CapCut WITH SCROLLING SUPPORT.
     Now properly scrolls through the entire voice list to find ANY voice.
