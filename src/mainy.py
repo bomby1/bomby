@@ -1561,213 +1561,93 @@ class CapCutOrchestrator:
             return True  # Don't fail the whole process for this
 
     def _set_voice(self, voice: str) -> bool:
-    """
-    Set the voice dropdown in CapCut WITH SCROLLING SUPPORT.
-    Now properly scrolls through the entire voice list to find ANY voice.
-    
-    Args:
-        voice: Voice name (e.g., "Ms. Labebe", "Happy Dino")
+        """
+        Set the voice dropdown in CapCut.
         
-    Returns:
-        True if successfully set
-    """
-    try:
-        print(f"   Setting voice to: {voice}")
-        
-        # STEP 1: Click the voice dropdown to open options
-        print(f"   Step 1: Opening voice dropdown...")
-        default_voice_selectors = [
-            "text='Ms. Labebe'",  # Common default
-            "text='Lady Holiday'",  # Another common default
-            "div:has-text('Ms. Labebe')",
-            ".dropdownButton-peTABv"  # From capture test
-        ]
-        
-        dropdown_opened = False
-        for selector in default_voice_selectors:
-            try:
-                element = self.current_page.locator(selector).first
-                if element.is_visible():
-                    print(f"   ✅ Clicked default voice to open dropdown")
-                    element.click()
-                    time.sleep(2)  # Wait for dropdown to fully open
-                    dropdown_opened = True
-                    break
-            except Exception:
-                continue
-        
-        if not dropdown_opened:
-            print(f"   ⚠️  Could not open voice dropdown, trying alternative methods...")
-            # Try clicking any visible voice button as fallback
-            try:
-                voice_buttons = self.current_page.locator("button:has-text('Voice'), div[role='button']:has-text('Voice')")
-                if voice_buttons.count() > 0:
-                    voice_buttons.first.click()
-                    time.sleep(2)
-                    dropdown_opened = True
-                    print(f"   ✅ Opened voice dropdown with alternative method")
-            except Exception as e:
-                print(f"   ❌ Failed to open dropdown: {e}")
-        
-        if not dropdown_opened:
-            print(f"   ⚠️  Could not open voice dropdown - trying to find voice anyway...")
-        
-        # STEP 2: Search for the voice with SCROLLING support
-        print(f"   Step 2: Searching for '{voice}' (with scrolling)...")
-        
-        # Define voice container selectors (the scrollable area)
-        voice_container_selectors = [
-            "[role='listbox']",  # Standard dropdown list
-            "[class*='dropdown-list']",
-            "[class*='voice-list']",
-            "[class*='options-list']",
-            "div[class*='lv-select-dropdown']",  # CapCut specific
-            ".lv-select-dropdown-list"
-        ]
-        
-        # Try to find the scrollable container
-        voice_container = None
-        for selector in voice_container_selectors:
-            try:
-                container = self.current_page.locator(selector).first
-                if container.is_visible():
-                    voice_container = container
-                    print(f"   📦 Found voice container with: {selector}")
-                    break
-            except Exception:
-                continue
-        
-        # Quick check: Is the voice already visible?
-        voice_selectors = [
-            f"text='{voice}'",
-            f"div:has-text('{voice}')",
-            f":text('{voice}')",
-            f"span:has-text('{voice}')"
-        ]
-        
-        for selector in voice_selectors:
-            try:
-                element = self.current_page.locator(selector).first
-                if element.is_visible():
-                    print(f"   ✅ Found voice immediately (no scrolling needed): {voice}")
-                    element.click()
-                    time.sleep(1)
-                    return True
-            except Exception:
-                continue
-        
-        # Voice not immediately visible - START SCROLLING
-        print(f"   📜 Voice not immediately visible - scrolling through dropdown...")
-        
-        if voice_container:
-            # Method 1: Scroll using mouse wheel events
-            print(f"   🔄 Method 1: Scrolling with mouse wheel...")
-            max_scrolls = 20  # Scroll up to 20 times
-            scroll_amount = 100  # Pixels per scroll
+        Args:
+            voice: Voice name (e.g., "Ms. Labebe", "Happy Dino")
             
-            for scroll_iteration in range(max_scrolls):
-                # Check if voice is now visible after scrolling
-                for selector in voice_selectors:
-                    try:
-                        element = self.current_page.locator(selector).first
-                        if element.is_visible():
-                            print(f"   ✅ Found voice after {scroll_iteration + 1} scrolls: {voice}")
-                            element.click()
-                            time.sleep(1)
-                            return True
-                    except Exception:
-                        continue
-                
-                # Scroll down in the container
+        Returns:
+            True if successfully set
+        """
+        try:
+            print(f"   Setting voice to: {voice}")
+            
+            # STEP 1: Click the default voice dropdown to open options
+            print(f"   Step 1: Opening voice dropdown...")
+            default_voice_selectors = [
+                "text='Ms. Labebe'",  # Common default
+                "text='Lady Holiday'",  # Another common default
+                "div:has-text('Ms. Labebe')",
+                ".dropdownButton-peTABv"  # From capture test
+            ]
+            
+            dropdown_opened = False
+            for selector in default_voice_selectors:
                 try:
-                    voice_container.evaluate(f"element => element.scrollTop += {scroll_amount}")
-                    time.sleep(0.3)  # Brief pause between scrolls
+                    element = self.current_page.locator(selector).first
+                    if element.is_visible():
+                        print(f"   ✅ Clicked default voice to open dropdown")
+                        element.click()
+                        time.sleep(1.5)
+                        dropdown_opened = True
+                        break
                 except Exception:
-                    print(f"   ⚠️  Scroll method 1 failed at iteration {scroll_iteration + 1}")
-                    break
-        
-        # Method 2: Use keyboard arrows to scroll through options
-        print(f"   🔄 Method 2: Scrolling with keyboard arrows...")
-        try:
-            for arrow_iteration in range(30):  # Try up to 30 arrow key presses
-                # Press arrow down to move to next option
-                self.current_page.keyboard.press("ArrowDown")
-                time.sleep(0.2)
-                
-                # Check if voice is now visible/selected
-                for selector in voice_selectors:
-                    try:
-                        element = self.current_page.locator(selector).first
-                        if element.is_visible():
-                            print(f"   ✅ Found voice after {arrow_iteration + 1} arrow presses: {voice}")
-                            # Press Enter to select it or click it
-                            try:
-                                self.current_page.keyboard.press("Enter")
-                            except:
-                                element.click()
-                            time.sleep(1)
-                            return True
-                    except Exception:
-                        continue
-        except Exception as e:
-            print(f"   ⚠️  Keyboard navigation failed: {e}")
-        
-        # Method 3: Get all voice options and scroll to the target one
-        print(f"   🔄 Method 3: Direct element scrolling...")
-        try:
-            # Get all voice option elements
-            all_voice_elements = self.current_page.locator("[role='option'], li, div[class*='voice-option']").all()
-            print(f"   📊 Found {len(all_voice_elements)} total voice elements")
+                    continue
             
-            for i, voice_element in enumerate(all_voice_elements):
+            if not dropdown_opened:
+                print(f"   ⚠️  Could not open voice dropdown")
+            
+            # STEP 2: Now select the desired voice from opened dropdown
+            print(f"   Step 2: Selecting '{voice}'...")
+            voice_selectors = [
+                f"text='{voice}'",  # WORKS! From capture test
+                f"div:has-text('{voice}')",  # Also works for voice options
+                f":text('{voice}')",
+                f"span:has-text('{voice}')"
+            ]
+            
+            for selector in voice_selectors:
                 try:
-                    voice_text = voice_element.text_content() or ""
-                    # Check if this is our target voice (case-insensitive)
-                    if voice.lower() in voice_text.lower():
-                        print(f"   🎯 Found matching voice at index {i}: '{voice_text}'")
-                        # Scroll the element into view
-                        voice_element.scroll_into_view_if_needed()
-                        time.sleep(0.5)
-                        # Click it
-                        voice_element.click()
+                    element = self.current_page.locator(selector).first
+                    if element.is_visible():
+                        print(f"   ✅ Found and clicked voice: {voice}")
+                        element.click()
                         time.sleep(1)
-                        print(f"   ✅ Selected voice: {voice}")
                         return True
-                except Exception as e:
-                    continue
-        except Exception as e:
-            print(f"   ⚠️  Direct element scrolling failed: {e}")
-        
-        # FALLBACK: If all methods failed
-        print(f"   ⚠️  Could not find voice '{voice}' after trying all methods")
-        print(f"   💡 Tip: Voice might not exist in CapCut or name might be slightly different")
-        
-        # Debug: Show available voices (first 10)
-        try:
-            print(f"   🔍 Showing available voices for reference:")
-            all_options = self.current_page.locator("[role='option'], li").all()
-            for i, option in enumerate(all_options[:10]):
-                try:
-                    text = option.text_content() or ""
-                    if text.strip():
-                        print(f"      {i + 1}. '{text.strip()}'")
                 except Exception:
                     continue
-        except Exception:
-            pass
-        
-        # Close dropdown by pressing Escape
-        try:
-            self.current_page.keyboard.press("Escape")
-            time.sleep(1)
-        except Exception:
-            pass
-        
-        return True  # Don't fail the whole process for this
-        
-    except Exception as e:
-        print(f"   ❌ Error setting voice: {e}")
-        return True  # Don't fail the whole process for this
+            
+            # If not found, try clicking the voice dropdown
+            print("   🔄 Trying to find voice in dropdown...")
+            voice_dropdown_selectors = [
+                "div:has-text('Voice')",
+                "[data-testid*='voice']",
+                "button:has-text('Voice')"
+            ]
+            
+            for selector in voice_dropdown_selectors:
+                try:
+                    dropdown = self.current_page.locator(selector).first
+                    if dropdown.is_visible():
+                        dropdown.click()
+                        time.sleep(1)
+                        
+                        # Look for the voice option
+                        voice_option = self.current_page.locator(f"text='{voice}'").first
+                        if voice_option.is_visible():
+                            voice_option.click()
+                            print(f"   ✅ Selected voice: {voice}")
+                            return True
+                except Exception:
+                    continue
+            
+            print(f"   ⚠️  Could not find voice: {voice}")
+            return True  # Don't fail the whole process for this
+            
+        except Exception as e:
+            print(f"   ❌ Error setting voice: {e}")
+            return True  # Don't fail the whole process for this
 
     def _set_duration(self, duration: str) -> bool:
         """
