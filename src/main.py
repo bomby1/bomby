@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 CapCut Automation - COMPLETE PIPELINE
 
@@ -9,6 +10,19 @@ Handles: Navigation → Form Fill → Generate → Export → Download → Video
 import os
 import sys
 import json
+
+# Fix Windows console encoding for emoji support and disable buffering for real-time output
+if sys.platform == 'win32':
+    try:
+        import codecs
+        # Use line buffering for immediate output
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+    except Exception:
+        pass
+
+# Disable output buffering for real-time console updates
+os.environ['PYTHONUNBUFFERED'] = '1'
 import time
 import argparse
 import subprocess
@@ -33,6 +47,14 @@ try:
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
+
+
+# Override built-in print to always flush for real-time output
+_original_print = print
+def print(*args, **kwargs):
+    """Custom print function that always flushes output for real-time display."""
+    kwargs.setdefault('flush', True)
+    _original_print(*args, **kwargs)
 
 
 class JobState:
@@ -670,6 +692,196 @@ class CapCutOrchestrator:
             print(f"❌ Generation monitoring failed: {e}")
             return False
     
+    def match_stock_media(self) -> bool:
+        """
+        Match stock media before exporting the video.
+        Steps:
+        1. Click on "Scenes" in the left sidebar
+        2. Click on "Media" tab
+        3. Click on "Match stock media" button
+        4. Click "Continue" on the confirmation popup
+        5. Wait 90 seconds for matching to complete
+        
+        Returns:
+            True if stock media matching completed successfully
+        """
+        try:
+            print("\n" + "=" * 60)
+            print("🎬 Matching Stock Media")
+            print("=" * 60)
+            
+            # Debug: Check current page and frames
+            print(f"📍 Current URL: {self.current_page.url}")
+            print(f"📊 Number of frames: {len(self.current_page.frames)}")
+            
+            # CRITICAL: Use page.evaluate to run the EXACT console script that works
+            print("\n🔧 Using direct JavaScript execution (like console script)...")
+            
+            try:
+                # Step 1: Click Scenes using JavaScript (exactly like console)
+                print("1️⃣ Clicking 'Scenes' button with JavaScript...")
+                result = self.current_page.evaluate("""
+                    () => {
+                        const scenesElements = Array.from(document.querySelectorAll('*')).filter(el => 
+                            el.textContent.trim() === 'Scenes' && el.offsetParent !== null
+                        );
+                        if (scenesElements.length > 0) {
+                            scenesElements[0].click();
+                            return { success: true, found: scenesElements.length };
+                        }
+                        return { success: false, found: 0 };
+                    }
+                """)
+                
+                if result['success']:
+                    print(f"   ✅ Clicked 'Scenes' button (found {result['found']} elements)")
+                    scenes_clicked = True
+                else:
+                    print(f"   ❌ Could not find 'Scenes' button")
+                    scenes_clicked = False
+                    
+            except Exception as e:
+                print(f"   ❌ JavaScript execution failed: {e}")
+                scenes_clicked = False
+            
+            if not scenes_clicked:
+                print("❌ Could not find 'Scenes' button")
+                return False
+            
+            # Wait for the Scenes panel to open (human-like delay)
+            print("   ⏳ Waiting for Scenes panel to open...")
+            time.sleep(3)
+            
+            # Step 2: Click on "Media" tab using JavaScript
+            print("2️⃣ Clicking 'Media' tab with JavaScript...")
+            time.sleep(0.8)  # Human-like delay before clicking
+            
+            try:
+                result = self.current_page.evaluate("""
+                    () => {
+                        const mediaElements = Array.from(document.querySelectorAll('*')).filter(el => 
+                            el.textContent.trim() === 'Media' && el.offsetParent !== null
+                        );
+                        if (mediaElements.length > 0) {
+                            mediaElements[0].click();
+                            return { success: true, found: mediaElements.length };
+                        }
+                        return { success: false, found: 0 };
+                    }
+                """)
+                
+                if result['success']:
+                    print(f"   ✅ Clicked 'Media' tab (found {result['found']} elements)")
+                    media_clicked = True
+                else:
+                    print(f"   ❌ Could not find 'Media' tab")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ JavaScript execution failed: {e}")
+                return False
+            
+            # Wait for the Media panel to load (human-like delay)
+            print("   ⏳ Waiting for Media panel to load...")
+            time.sleep(2.5)
+            
+            # Step 3: Click on "Match" button using JavaScript
+            print("3️⃣ Clicking 'Match' button with JavaScript...")
+            time.sleep(1.2)  # Human-like delay before clicking
+            
+            try:
+                result = self.current_page.evaluate("""
+                    () => {
+                        // Method 1: Try class-based selector first
+                        const matchBtn = document.querySelector("div[class*='match-media-btn']");
+                        if (matchBtn && matchBtn.offsetParent !== null) {
+                            matchBtn.click();
+                            return { success: true, method: 'class-selector' };
+                        }
+                        
+                        // Method 2: Find all divs with exact "Match" text
+                        const allDivs = Array.from(document.querySelectorAll('div'));
+                        const matchDivs = allDivs.filter(div => {
+                            const text = div.textContent.trim();
+                            return text === 'Match' && div.offsetParent !== null;
+                        });
+                        
+                        if (matchDivs.length > 0) {
+                            matchDivs[matchDivs.length - 1].click(); // Use last one
+                            return { success: true, method: 'text-match', found: matchDivs.length };
+                        }
+                        
+                        return { success: false };
+                    }
+                """)
+                
+                if result['success']:
+                    method = result.get('method', 'unknown')
+                    print(f"   ✅ Clicked 'Match' button (method: {method})")
+                    match_clicked = True
+                else:
+                    print(f"   ❌ Could not find 'Match' button")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ JavaScript execution failed: {e}")
+                return False
+            
+            # Wait longer for confirmation popup to appear (human-like delay)
+            print("   ⏳ Waiting for confirmation popup...")
+            time.sleep(3.5)
+            
+            # Step 4: Click "Continue" button using JavaScript
+            print("4️⃣ Clicking 'Continue' button with JavaScript...")
+            time.sleep(0.6)  # Human-like delay before clicking
+            
+            try:
+                result = self.current_page.evaluate("""
+                    () => {
+                        const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]')).filter(btn => 
+                            btn.offsetParent !== null
+                        );
+                        
+                        const continueBtn = allButtons.find(btn => 
+                            btn.textContent.toLowerCase().includes('continue')
+                        );
+                        
+                        if (continueBtn) {
+                            continueBtn.click();
+                            return { success: true, text: continueBtn.textContent.trim() };
+                        }
+                        
+                        return { success: false };
+                    }
+                """)
+                
+                if result['success']:
+                    print(f"   ✅ Clicked 'Continue' button: '{result.get('text', '')}'")
+                    continue_clicked = True
+                else:
+                    print(f"   ❌ Could not find 'Continue' button")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ JavaScript execution failed: {e}")
+                return False
+            
+            # Step 5: Wait 90 seconds for stock media matching to complete
+            print("5️⃣ Waiting 90 seconds for stock media matching to complete...")
+            wait_time = 90
+            for i in range(wait_time):
+                remaining = wait_time - i
+                if remaining % 10 == 0 or remaining <= 5:
+                    print(f"   ⏱️  {remaining} seconds remaining...")
+                time.sleep(1)
+            
+            print("✅ Stock media matching completed!")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Stock media matching failed: {e}")
+            return False
+    
     def set_video_customizations(self, job: Dict[str, Any]) -> bool:
         """
         SIMPLE: Set video customization options using the same methods as fill_form().
@@ -923,15 +1135,12 @@ class CapCutOrchestrator:
             
             # Wait 1 minute for export to complete
             print("⏳ Waiting 1 minute for export to complete...")
-            sys.stdout.flush()
             for i in range(60):
                 remaining = 60 - i
-                print(f"   ⏱️ Export time remaining: {remaining} seconds")
-                sys.stdout.flush()
+                print(f"   ⏱️ Export time remaining: {remaining} seconds", end='\r')
                 time.sleep(1)
             
             print("\n✅ Export completed!")
-            sys.stdout.flush()
             
             # Now download the video from My Cloud
             print("\n" + "=" * 60)
@@ -946,7 +1155,7 @@ class CapCutOrchestrator:
             if downloaded_file:
                 print(f"✅ Video downloaded successfully: {downloaded_file}")
                 print(f"📁 Saved to: {downloaded_file}")
-                print("\nℹ️  Video editing and YouTube upload will be handled by the pipeline orchestrator")
+                print("\nℹ️  Video editing and YouTube upload will be handled by the pipeline orchestrator")                
             else:
                 print("⚠️ Video download failed, but export was successful")
             
@@ -1225,6 +1434,14 @@ class CapCutOrchestrator:
                 raise Exception("Video generation failed or timed out")
             
             print("🎉 Video generation completed successfully!")
+            
+            # Step 6.5: Match stock media before exporting
+            job_state.current_step = "match_stock_media"
+            print("🎬 Matching stock media before export...")
+            if not self.match_stock_media():
+                print("⚠️  Warning: Stock media matching failed, but continuing with export...")
+            else:
+                print("🎉 Stock media matched successfully!")
             
             # Step 7: Export the video
             job_state.current_step = "export_video"
@@ -1562,7 +1779,7 @@ class CapCutOrchestrator:
 
     def _set_voice(self, voice: str) -> bool:
         """
-        Set the voice dropdown in CapCut.
+        Set the voice dropdown in CapCut with improved scrolling to find all voices.
         
         Args:
             voice: Voice name (e.g., "Ms. Labebe", "Happy Dino")
@@ -1598,8 +1815,30 @@ class CapCutOrchestrator:
             if not dropdown_opened:
                 print(f"   ⚠️  Could not open voice dropdown")
             
-            # STEP 2: Now select the desired voice from opened dropdown
-            print(f"   Step 2: Selecting '{voice}'...")
+            # STEP 2: Search for the voice with incremental scrolling
+            print(f"   Step 2: Searching for '{voice}' with scrolling...")
+            
+            # Try to find the dropdown container for scrolling
+            dropdown_container = None
+            container_selectors = [
+                "[role='listbox']",  # Common dropdown list
+                ".lv-select-dropdown",  # CapCut specific
+                "[class*='dropdown']",
+                "[class*='menu']",
+                "[class*='options']"
+            ]
+            
+            for selector in container_selectors:
+                try:
+                    container = self.current_page.locator(selector).first
+                    if container.is_visible():
+                        dropdown_container = container
+                        print(f"   📦 Found dropdown container with: {selector}")
+                        break
+                except Exception:
+                    continue
+            
+            # Define selectors to search for the voice
             voice_selectors = [
                 f"text='{voice}'",  # WORKS! From capture test
                 f"div:has-text('{voice}')",  # Also works for voice options
@@ -1607,168 +1846,76 @@ class CapCutOrchestrator:
                 f"span:has-text('{voice}')"
             ]
             
+            # First, try to find the voice without scrolling (it might be visible)
             for selector in voice_selectors:
                 try:
-                    # Get ALL matching elements, not just the first one
-                    elements = self.current_page.locator(selector).all()
-                    for element in elements:
-                        try:
-                            if element.is_visible():
-                                print(f"   ✅ Found and clicked voice: {voice}")
-                                element.click()
-                                time.sleep(1)
-                                return True
-                        except Exception:
-                            continue
+                    element = self.current_page.locator(selector).first
+                    if element.is_visible():
+                        print(f"   ✅ Found voice immediately (no scroll needed): {voice}")
+                        element.click()
+                        time.sleep(1)
+                        return True
                 except Exception:
                     continue
             
-            # If not found with direct selectors, scroll through dropdown to find the voice
-            print("   🔄 Voice not found in initial view, scrolling through dropdown...")
+            # If not found, scroll through the dropdown incrementally
+            print(f"   🔄 Voice not visible, starting incremental scroll search...")
             
-            # DEBUG: List all visible text elements to see what's in the dropdown
-            try:
-                all_text_elements = self.current_page.locator("div, span, button, li").all()
-                visible_texts = []
-                for elem in all_text_elements[:100]:  # Check first 100 elements
+            max_scroll_attempts = 20  # Limit scrolling attempts
+            scroll_amount = 100  # Pixels to scroll each time
+            
+            for attempt in range(max_scroll_attempts):
+                # Scroll down in the dropdown
+                if dropdown_container:
                     try:
-                        if elem.is_visible():
-                            text = elem.text_content()
-                            if text and len(text.strip()) > 0 and len(text.strip()) < 100:
-                                visible_texts.append(text.strip())
-                    except:
-                        pass
-                if visible_texts:
-                    print(f"   🔍 DEBUG: Visible text in dropdown (first 20): {visible_texts[:20]}")
-            except:
-                pass
-            
-            # Find the dropdown container and scroll through it
-            dropdown_containers = [
-                "[role='listbox']",
-                ".lv-select-dropdown",
-                ".dropdown-menu",
-                "div[class*='dropdown']",
-                "div[class*='menu']",
-                "div[class*='option']",
-                ".lv-virtual-list"  # Virtual list container
-            ]
-            
-            for container_selector in dropdown_containers:
-                try:
-                    container = self.current_page.locator(container_selector).first
-                    if container.is_visible():
-                        print(f"   Found dropdown container: {container_selector}")
-                        
-                        # Scroll within the dropdown to reveal all voices
-                        max_scrolls = 30  # Increased from 20 to 30
-                        scroll_count = 0
-                        last_height = 0
-                        
-                        while scroll_count < max_scrolls:
-                            # Try to find the voice in current view
-                            for selector in voice_selectors:
-                                try:
-                                    elements = self.current_page.locator(selector).all()
-                                    for element in elements:
-                                        try:
-                                            if element.is_visible():
-                                                print(f"   ✅ Found voice after scrolling: {voice}")
-                                                element.click()
-                                                time.sleep(1)
-                                                return True
-                                        except Exception:
-                                            continue
-                                except Exception:
-                                    continue
-                            
-                            # Scroll down in the dropdown container using multiple methods
-                            scroll_success = False
-                            
-                            # Method 1: Direct scrollTop manipulation
-                            try:
-                                container.evaluate("el => el.scrollTop += 150")
-                                scroll_success = True
-                            except Exception:
-                                pass
-                            
-                            # Method 2: Wheel event
-                            if not scroll_success:
-                                try:
-                                    container.evaluate("el => el.dispatchEvent(new WheelEvent('wheel', {deltaY: 150}))")
-                                    scroll_success = True
-                                except Exception:
-                                    pass
-                            
-                            # Method 3: Focus and keyboard navigation
-                            if not scroll_success:
-                                try:
-                                    container.focus()
-                                    self.current_page.keyboard.press("PageDown")
-                                    scroll_success = True
-                                except Exception:
-                                    pass
-                            
-                            if scroll_success:
-                                time.sleep(0.3)
-                                scroll_count += 1
-                                print(f"   Scrolling... ({scroll_count}/{max_scrolls})")
-                            else:
-                                break
-                        
-                        # After scrolling, try one more time to find the voice
-                        for selector in voice_selectors:
-                            try:
-                                elements = self.current_page.locator(selector).all()
-                                for element in elements:
-                                    try:
-                                        if element.is_visible():
-                                            print(f"   ✅ Found voice after all scrolling: {voice}")
-                                            element.click()
-                                            time.sleep(1)
-                                            return True
-                                    except Exception:
-                                        continue
-                            except Exception:
-                                continue
-                        
-                except Exception as e:
-                    print(f"   Could not scroll container {container_selector}: {e}")
-                    continue
-            
-            # If still not found, try using keyboard to navigate through all options
-            print("   🔄 Trying keyboard navigation through all options...")
-            try:
-                # Press Home to go to the beginning
-                self.current_page.keyboard.press("Home")
-                time.sleep(0.5)
-                
-                # Try pressing Down arrow multiple times to find the voice
-                for attempt in range(50):  # Try up to 50 times
-                    # Check if voice is visible
-                    for selector in voice_selectors:
+                        # Scroll the container down
+                        dropdown_container.evaluate(f"element => element.scrollTop += {scroll_amount}")
+                        time.sleep(0.3)  # Small delay to let content load
+                        print(f"   � Scroll attempt {attempt + 1}/{max_scroll_attempts}...")
+                    except Exception as e:
+                        print(f"   ⚠️  Scroll failed: {e}")
+                        # Try page-level scroll as fallback
                         try:
-                            elements = self.current_page.locator(selector).all()
-                            for element in elements:
-                                try:
-                                    if element.is_visible():
-                                        print(f"   ✅ Found voice via keyboard navigation: {voice}")
-                                        element.click()
-                                        time.sleep(1)
-                                        return True
-                                except Exception:
-                                    continue
+                            self.current_page.mouse.wheel(0, scroll_amount)
+                            time.sleep(0.3)
                         except Exception:
-                            continue
-                    
-                    # Move to next option
-                    self.current_page.keyboard.press("ArrowDown")
-                    time.sleep(0.2)
-            except Exception as e:
-                print(f"   Keyboard navigation failed: {e}")
+                            pass
+                else:
+                    # No container found, try page-level scroll
+                    try:
+                        self.current_page.mouse.wheel(0, scroll_amount)
+                        time.sleep(0.3)
+                    except Exception:
+                        pass
+                
+                # After scrolling, check if the voice is now visible
+                for selector in voice_selectors:
+                    try:
+                        element = self.current_page.locator(selector).first
+                        if element.is_visible():
+                            print(f"   ✅ Found voice after scrolling: {voice}")
+                            element.click()
+                            time.sleep(1)
+                            return True
+                    except Exception:
+                        continue
+                
+                # Check if we've reached the bottom of the dropdown
+                if dropdown_container:
+                    try:
+                        is_at_bottom = dropdown_container.evaluate("""
+                            element => {
+                                return element.scrollHeight - element.scrollTop <= element.clientHeight + 10;
+                            }
+                        """)
+                        if is_at_bottom:
+                            print(f"   📍 Reached bottom of dropdown")
+                            break
+                    except Exception:
+                        pass
             
-            # Last resort: try clicking the voice dropdown button and searching again
-            print("   🔄 Trying alternative dropdown access...")
+            # If still not found, try the fallback methods
+            print("   🔄 Trying fallback methods...")
             voice_dropdown_selectors = [
                 "div:has-text('Voice')",
                 "[data-testid*='voice']",
@@ -1782,25 +1929,12 @@ class CapCutOrchestrator:
                         dropdown.click()
                         time.sleep(1)
                         
-                        # Look for the voice option with scrolling
-                        for attempt in range(10):
-                            voice_option_elements = self.current_page.locator(f"text='{voice}'").all()
-                            for voice_option in voice_option_elements:
-                                try:
-                                    if voice_option.is_visible():
-                                        voice_option.click()
-                                        print(f"   ✅ Selected voice: {voice}")
-                                        return True
-                                except Exception:
-                                    continue
-                            
-                            # Scroll if not found
-                            try:
-                                self.current_page.keyboard.press("ArrowDown")
-                                time.sleep(0.3)
-                            except Exception:
-                                break
-                        
+                        # Look for the voice option
+                        voice_option = self.current_page.locator(f"text='{voice}'").first
+                        if voice_option.is_visible():
+                            voice_option.click()
+                            print(f"   ✅ Selected voice: {voice}")
+                            return True
                 except Exception:
                     continue
             
