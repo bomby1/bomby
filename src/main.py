@@ -1626,13 +1626,32 @@ class CapCutOrchestrator:
             # If not found with direct selectors, scroll through dropdown to find the voice
             print("   🔄 Voice not found in initial view, scrolling through dropdown...")
             
+            # DEBUG: List all visible text elements to see what's in the dropdown
+            try:
+                all_text_elements = self.current_page.locator("div, span, button, li").all()
+                visible_texts = []
+                for elem in all_text_elements[:100]:  # Check first 100 elements
+                    try:
+                        if elem.is_visible():
+                            text = elem.text_content()
+                            if text and len(text.strip()) > 0 and len(text.strip()) < 100:
+                                visible_texts.append(text.strip())
+                    except:
+                        pass
+                if visible_texts:
+                    print(f"   🔍 DEBUG: Visible text in dropdown (first 20): {visible_texts[:20]}")
+            except:
+                pass
+            
             # Find the dropdown container and scroll through it
             dropdown_containers = [
                 "[role='listbox']",
                 ".lv-select-dropdown",
                 ".dropdown-menu",
                 "div[class*='dropdown']",
-                "div[class*='menu']"
+                "div[class*='menu']",
+                "div[class*='option']",
+                ".lv-virtual-list"  # Virtual list container
             ]
             
             for container_selector in dropdown_containers:
@@ -1642,8 +1661,9 @@ class CapCutOrchestrator:
                         print(f"   Found dropdown container: {container_selector}")
                         
                         # Scroll within the dropdown to reveal all voices
-                        max_scrolls = 20  # Maximum number of scroll attempts
+                        max_scrolls = 30  # Increased from 20 to 30
                         scroll_count = 0
+                        last_height = 0
                         
                         while scroll_count < max_scrolls:
                             # Try to find the voice in current view
@@ -1662,13 +1682,38 @@ class CapCutOrchestrator:
                                 except Exception:
                                     continue
                             
-                            # Scroll down in the dropdown container
+                            # Scroll down in the dropdown container using multiple methods
+                            scroll_success = False
+                            
+                            # Method 1: Direct scrollTop manipulation
                             try:
-                                container.evaluate("el => el.scrollTop += 100")
-                                time.sleep(0.5)
+                                container.evaluate("el => el.scrollTop += 150")
+                                scroll_success = True
+                            except Exception:
+                                pass
+                            
+                            # Method 2: Wheel event
+                            if not scroll_success:
+                                try:
+                                    container.evaluate("el => el.dispatchEvent(new WheelEvent('wheel', {deltaY: 150}))")
+                                    scroll_success = True
+                                except Exception:
+                                    pass
+                            
+                            # Method 3: Focus and keyboard navigation
+                            if not scroll_success:
+                                try:
+                                    container.focus()
+                                    self.current_page.keyboard.press("PageDown")
+                                    scroll_success = True
+                                except Exception:
+                                    pass
+                            
+                            if scroll_success:
+                                time.sleep(0.3)
                                 scroll_count += 1
                                 print(f"   Scrolling... ({scroll_count}/{max_scrolls})")
-                            except Exception:
+                            else:
                                 break
                         
                         # After scrolling, try one more time to find the voice
@@ -1691,7 +1736,38 @@ class CapCutOrchestrator:
                     print(f"   Could not scroll container {container_selector}: {e}")
                     continue
             
-            # If still not found, try clicking the voice dropdown button and searching again
+            # If still not found, try using keyboard to navigate through all options
+            print("   🔄 Trying keyboard navigation through all options...")
+            try:
+                # Press Home to go to the beginning
+                self.current_page.keyboard.press("Home")
+                time.sleep(0.5)
+                
+                # Try pressing Down arrow multiple times to find the voice
+                for attempt in range(50):  # Try up to 50 times
+                    # Check if voice is visible
+                    for selector in voice_selectors:
+                        try:
+                            elements = self.current_page.locator(selector).all()
+                            for element in elements:
+                                try:
+                                    if element.is_visible():
+                                        print(f"   ✅ Found voice via keyboard navigation: {voice}")
+                                        element.click()
+                                        time.sleep(1)
+                                        return True
+                                except Exception:
+                                    continue
+                        except Exception:
+                            continue
+                    
+                    # Move to next option
+                    self.current_page.keyboard.press("ArrowDown")
+                    time.sleep(0.2)
+            except Exception as e:
+                print(f"   Keyboard navigation failed: {e}")
+            
+            # Last resort: try clicking the voice dropdown button and searching again
             print("   🔄 Trying alternative dropdown access...")
             voice_dropdown_selectors = [
                 "div:has-text('Voice')",
