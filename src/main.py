@@ -1779,10 +1779,11 @@ class CapCutOrchestrator:
 
     def _set_voice(self, voice: str) -> bool:
         """
-        Set the voice dropdown in CapCut with improved scrolling to find all voices.
+        Set the voice dropdown in CapCut - ROBUST method for virtual scrolling lists.
+        Handles lazy-loaded dropdowns with many options.
         
         Args:
-            voice: Voice name (e.g., "Ms. Labebe", "Happy Dino")
+            voice: Voice name (e.g., "Ms. Labebe", "Happy Dino", "Sir British Narrator")
             
         Returns:
             True if successfully set
@@ -1790,160 +1791,186 @@ class CapCutOrchestrator:
         try:
             print(f"   Setting voice to: {voice}")
             
-            # STEP 1: Click the default voice dropdown to open options
+            # STEP 1: Click the voice dropdown to open it
             print(f"   Step 1: Opening voice dropdown...")
-            default_voice_selectors = [
-                "text='Ms. Labebe'",  # Common default
-                "text='Lady Holiday'",  # Another common default
+            
+            # Try multiple methods to open the dropdown
+            dropdown_opened = False
+            
+            # Method 1: Click on the current voice display
+            voice_button_selectors = [
+                "text='Ms. Labebe'",
+                "text='Lady Holiday'",
                 "div:has-text('Ms. Labebe')",
-                ".dropdownButton-peTABv"  # From capture test
+                "div:has-text('Voice')",
+                ".dropdownButton-peTABv",
+                "[class*='voice'] button",
+                "button:has-text('Ms. Labebe')"
             ]
             
-            dropdown_opened = False
-            for selector in default_voice_selectors:
+            for selector in voice_button_selectors:
                 try:
                     element = self.current_page.locator(selector).first
-                    if element.is_visible():
-                        print(f"   ✅ Clicked default voice to open dropdown")
+                    if element.is_visible(timeout=2000):
                         element.click()
-                        time.sleep(1.5)
+                        time.sleep(2)  # Wait for dropdown to fully open
                         dropdown_opened = True
+                        print(f"   ✅ Opened dropdown with: {selector}")
                         break
                 except Exception:
                     continue
             
             if not dropdown_opened:
-                print(f"   ⚠️  Could not open voice dropdown")
+                print(f"   ⚠️  Could not open voice dropdown, trying to continue anyway...")
             
-            # STEP 2: Search for the voice with incremental scrolling
-            print(f"   Step 2: Searching for '{voice}' with scrolling...")
+            # STEP 2: Use JavaScript to find and click the voice (most reliable for virtual lists)
+            print(f"   Step 2: Using JavaScript to find '{voice}'...")
             
-            # Try to find the dropdown container for scrolling
+            try:
+                # JavaScript approach - searches ALL elements including lazy-loaded ones
+                result = self.current_page.evaluate(f"""
+                    (voiceName) => {{
+                        // Find all elements with the voice name
+                        const allElements = Array.from(document.querySelectorAll('*'));
+                        const matches = allElements.filter(el => {{
+                            const text = el.textContent?.trim() || '';
+                            return text === voiceName && el.offsetParent !== null;
+                        }});
+                        
+                        if (matches.length > 0) {{
+                            // Click the first match
+                            matches[0].click();
+                            return {{ success: true, found: matches.length }};
+                        }}
+                        
+                        return {{ success: false, found: 0 }};
+                    }}
+                """, voice)
+                
+                if result.get('success'):
+                    print(f"   ✅ Found and clicked '{voice}' with JavaScript (found {result['found']} matches)")
+                    time.sleep(1)
+                    return True
+                else:
+                    print(f"   ⚠️  Voice not immediately visible, will try scrolling...")
+            except Exception as e:
+                print(f"   ⚠️  JavaScript method failed: {e}")
+            
+            # STEP 3: Scroll through virtual list to load and find the voice
+            print(f"   Step 3: Scrolling through virtual list...")
+            
+            # Find the scrollable container
             dropdown_container = None
             container_selectors = [
-                "[role='listbox']",  # Common dropdown list
-                ".lv-select-dropdown",  # CapCut specific
+                "[role='listbox']",
+                ".lv-select-dropdown", 
                 "[class*='dropdown']",
-                "[class*='menu']",
-                "[class*='options']"
+                "[class*='popover']",
+                "[class*='menu']"
             ]
             
             for selector in container_selectors:
                 try:
-                    container = self.current_page.locator(selector).first
-                    if container.is_visible():
-                        dropdown_container = container
-                        print(f"   📦 Found dropdown container with: {selector}")
+                    containers = self.current_page.locator(selector).all()
+                    for container in containers:
+                        if container.is_visible():
+                            dropdown_container = container
+                            print(f"   📦 Found dropdown container: {selector}")
+                            break
+                    if dropdown_container:
                         break
                 except Exception:
                     continue
             
-            # Define selectors to search for the voice
-            voice_selectors = [
-                f"text='{voice}'",  # WORKS! From capture test
-                f"div:has-text('{voice}')",  # Also works for voice options
-                f":text('{voice}')",
-                f"span:has-text('{voice}')"
-            ]
-            
-            # First, try to find the voice without scrolling (it might be visible)
-            for selector in voice_selectors:
-                try:
-                    element = self.current_page.locator(selector).first
-                    if element.is_visible():
-                        print(f"   ✅ Found voice immediately (no scroll needed): {voice}")
-                        element.click()
-                        time.sleep(1)
-                        return True
-                except Exception:
-                    continue
-            
-            # If not found, scroll through the dropdown incrementally
-            print(f"   🔄 Voice not visible, starting incremental scroll search...")
-            
-            max_scroll_attempts = 20  # Limit scrolling attempts
-            scroll_amount = 100  # Pixels to scroll each time
-            
-            for attempt in range(max_scroll_attempts):
-                # Scroll down in the dropdown
-                if dropdown_container:
+            if dropdown_container:
+                # Scroll strategy for virtual lists
+                max_scrolls = 30
+                scroll_step = 150
+                previous_scroll_top = -1
+                
+                for scroll_attempt in range(max_scrolls):
+                    # Check current scroll position
                     try:
-                        # Scroll the container down
-                        dropdown_container.evaluate(f"element => element.scrollTop += {scroll_amount}")
-                        time.sleep(0.3)  # Small delay to let content load
-                        print(f"   � Scroll attempt {attempt + 1}/{max_scroll_attempts}...")
-                    except Exception as e:
-                        print(f"   ⚠️  Scroll failed: {e}")
-                        # Try page-level scroll as fallback
-                        try:
-                            self.current_page.mouse.wheel(0, scroll_amount)
-                            time.sleep(0.3)
-                        except Exception:
-                            pass
-                else:
-                    # No container found, try page-level scroll
-                    try:
-                        self.current_page.mouse.wheel(0, scroll_amount)
-                        time.sleep(0.3)
+                        current_scroll = dropdown_container.evaluate("el => el.scrollTop")
+                        
+                        # If scroll position hasn't changed, we might be at the bottom
+                        if current_scroll == previous_scroll_top:
+                            print(f"   📍 Scroll position unchanged, likely at bottom")
+                            break
+                        
+                        previous_scroll_top = current_scroll
                     except Exception:
                         pass
-                
-                # After scrolling, check if the voice is now visible
-                for selector in voice_selectors:
+                    
+                    # Try to find the voice at current scroll position using JavaScript
                     try:
-                        element = self.current_page.locator(selector).first
-                        if element.is_visible():
-                            print(f"   ✅ Found voice after scrolling: {voice}")
-                            element.click()
+                        found = self.current_page.evaluate(f"""
+                            (voiceName) => {{
+                                const allElements = Array.from(document.querySelectorAll('*'));
+                                const matches = allElements.filter(el => {{
+                                    const text = el.textContent?.trim() || '';
+                                    return text === voiceName && el.offsetParent !== null;
+                                }});
+                                
+                                if (matches.length > 0) {{
+                                    matches[0].click();
+                                    return true;
+                                }}
+                                return false;
+                            }}
+                        """, voice)
+                        
+                        if found:
+                            print(f"   ✅ Found '{voice}' after {scroll_attempt} scrolls!")
                             time.sleep(1)
                             return True
                     except Exception:
-                        continue
-                
-                # Check if we've reached the bottom of the dropdown
-                if dropdown_container:
-                    try:
-                        is_at_bottom = dropdown_container.evaluate("""
-                            element => {
-                                return element.scrollHeight - element.scrollTop <= element.clientHeight + 10;
-                            }
-                        """)
-                        if is_at_bottom:
-                            print(f"   📍 Reached bottom of dropdown")
-                            break
-                    except Exception:
                         pass
+                    
+                    # Scroll down to load more items
+                    try:
+                        dropdown_container.evaluate(f"el => el.scrollTop += {scroll_step}")
+                        time.sleep(0.4)  # Wait for lazy loading
+                        
+                        if scroll_attempt % 5 == 0:
+                            print(f"   📜 Scrolled {scroll_attempt}/{max_scrolls} times...")
+                    except Exception as e:
+                        print(f"   ⚠️  Scroll error: {e}")
+                        break
             
-            # If still not found, try the fallback methods
-            print("   🔄 Trying fallback methods...")
-            voice_dropdown_selectors = [
-                "div:has-text('Voice')",
-                "[data-testid*='voice']",
-                "button:has-text('Voice')"
+            # STEP 4: Final attempt - try Playwright locators with all possible selectors
+            print(f"   Step 4: Final attempt with Playwright locators...")
+            
+            voice_selectors = [
+                f"text='{voice}'",
+                f":text('{voice}')",
+                f"div:has-text('{voice}')",
+                f"span:has-text('{voice}')",
+                f"[title='{voice}']",
+                f"[aria-label='{voice}']"
             ]
             
-            for selector in voice_dropdown_selectors:
+            for selector in voice_selectors:
                 try:
-                    dropdown = self.current_page.locator(selector).first
-                    if dropdown.is_visible():
-                        dropdown.click()
-                        time.sleep(1)
-                        
-                        # Look for the voice option
-                        voice_option = self.current_page.locator(f"text='{voice}'").first
-                        if voice_option.is_visible():
-                            voice_option.click()
-                            print(f"   ✅ Selected voice: {voice}")
+                    elements = self.current_page.locator(selector).all()
+                    for element in elements:
+                        if element.is_visible(timeout=1000):
+                            print(f"   ✅ Found with selector: {selector}")
+                            element.click()
+                            time.sleep(1)
                             return True
                 except Exception:
                     continue
             
-            print(f"   ⚠️  Could not find voice: {voice}")
-            return True  # Don't fail the whole process for this
+            print(f"   ⚠️  Could not find voice '{voice}' after all attempts")
+            print(f"   💡 The voice might not be available or has a different name")
+            return True  # Don't fail the whole process
             
         except Exception as e:
             print(f"   ❌ Error setting voice: {e}")
-            return True  # Don't fail the whole process for this
+            import traceback
+            traceback.print_exc()
+            return True  # Don't fail the whole process
 
     def _set_duration(self, duration: str) -> bool:
         """
